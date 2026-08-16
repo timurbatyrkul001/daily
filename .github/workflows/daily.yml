@@ -1,0 +1,34 @@
+name: daily
+
+# GitHub cron UTC ile çalışır. 07:00 UTC = 10:00 İstanbul.
+# Yoğun saatlerde GitHub zamanlanmış işleri geciktirebilir; birkaç saat sapma normaldir.
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Her commit'in aynı dakikada düşmesi bariz duruyor; 0-40 dk rastgele bekle.
+      - name: rastgele gecikme
+        run: sleep $(( RANDOM % 2400 ))
+
+      - name: günlüğe satır ekle
+        run: date -u +"%Y-%m-%d %H:%M UTC" >> log.md
+
+      # Yazar e-postası hesaba kayıtlı adres olmalı — yoksa katkı grafiğine işlenmez.
+      - name: commit ve push
+        run: |
+          git config user.name "Timur Batyrkul"
+          git config user.email "timurbatyrkul07@gmail.com"
+          git add log.md
+          git diff --staged --quiet && exit 0
+          git commit -m "log: $(date -u +%F)"
+          git push
